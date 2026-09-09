@@ -109,13 +109,14 @@ function ProfilePage() {
           <li>
             <button
               onClick={() => navigate({ to: "/admin" })}
-            className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
-          >
-            <Shield className="size-4 text-muted-foreground" />
-            <span className="text-sm font-semibold">Admin Panel</span>
-            <ChevronRight className="ml-auto size-4 text-muted-foreground" />
-          </button>
-        </li>
+              className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
+            >
+              <Shield className="size-4 text-muted-foreground" />
+              <span className="text-sm font-semibold">Admin Panel</span>
+              <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+            </button>
+          </li>
+        )}
       </ul>
 
       <form
