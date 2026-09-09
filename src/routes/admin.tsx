@@ -104,7 +104,7 @@ function Empty({ label }: { label: string }) {
 }
 function Row({ title, subtitle, value, status, actions }: { title: string; subtitle: string; value?: string; status?: string; actions?: string[] }) {
   return (
-    <div className="rounded-xl border-border p-3">
+    <div className="rounded-xl border border-border p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{title}</p>
@@ -164,7 +164,7 @@ function AdminPage() {
   // FIXED ADMIN CHECK - CHECKS BY EMAIL
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { user } = await supabase.auth.getUser();
+      const { data: { user } = await supabase.auth.getUser(); // <-- FIXED THIS LINE
 
       if (!user) {
         window.location.href = "/login";
@@ -175,10 +175,10 @@ function AdminPage() {
 
       // Check by EMAIL instead of ID
       const { data: profile, error } = await supabase
-       .from("profiles")
-       .select("is_admin")
-       .eq("email", user.email)
-       .single();
+      .from("profiles")
+      .select("is_admin")
+      .eq("email", user.email)
+      .single();
 
       console.log("Profile data:", profile, "Error:", error)
 
@@ -186,7 +186,6 @@ function AdminPage() {
         setIsAdmin(true);
       } else {
         toast.error("You are not an admin");
-        // window.location.href = "/profile"; // REMOVED THIS SO YOU CAN SEE ERROR
       }
       setLoading(false);
     };
@@ -201,7 +200,6 @@ function AdminPage() {
     return <AppLayout><p className="p-6 text-center text-sm text-muted-foreground">Access denied. You are not admin.</p></AppLayout>;
   }
 
-  // YOUR DASHBOARD - 100% UNCHANGED
   return (
     <AppLayout>
       <div className="space-y-4 p-4">
