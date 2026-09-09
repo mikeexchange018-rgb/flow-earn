@@ -8,7 +8,8 @@ import {
   type ReactNode,
 } from "react";
 
-export const ADMIN_EMAIL = "serikitunmishe@gmail.com";
+export const ADMIN_EMAILS = ["serikitunmishe@gmail.com", "serikitumnishe@gmail.com"];
+export const ADMIN_EMAIL = ADMIN_EMAILS[0]!;
 
 export type Activity = { id: string; label: string; amount: number; at: string };
 
@@ -406,7 +407,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       ready,
-      isAdmin: sameEmail(state.user?.email, ADMIN_EMAIL),
+      isAdmin: ADMIN_EMAILS.some((e) => sameEmail(state.user?.email, e)),
       register,
       login,
       logout,
