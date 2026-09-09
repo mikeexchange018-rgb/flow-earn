@@ -407,7 +407,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       ready,
-      isAdmin: sameEmail(state.user?.email, ADMIN_EMAIL),
+      isAdmin: ADMIN_EMAILS.some((e) => sameEmail(state.user?.email, e)),
       register,
       login,
       logout,
