@@ -518,7 +518,7 @@ function AdminPage() {
     return () => {
       cancelled = true;
     };
-  }, [checkSession]);
+  }, [checkSession, isAdmin]);
 
   if (gate === "loading") {
     return (
