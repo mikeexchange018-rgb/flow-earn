@@ -495,7 +495,7 @@ function AdminLoginForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 function AdminPage() {
-  const { state } = useApp();
+  const { state, isAdmin } = useApp();
   const [tab, setTab] = useState<Tab>("Dashboard");
   const [gate, setGate] = useState<Gate>("loading");
   const checkSession = useServerFn(getAdminSession);
@@ -503,6 +503,11 @@ function AdminPage() {
 
   useEffect(() => {
     let cancelled = false;
+    // An already signed-in admin account skips the extra admin sign-in.
+    if (isAdmin) {
+      setGate("unlocked");
+      return;
+    }
     checkSession()
       .then(({ unlocked }) => {
         if (!cancelled) setGate(unlocked ? "unlocked" : "locked");
@@ -513,7 +518,7 @@ function AdminPage() {
     return () => {
       cancelled = true;
     };
-  }, [checkSession]);
+  }, [checkSession, isAdmin]);
 
   if (gate === "loading") {
     return (
