@@ -2,46 +2,82 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "@tanstack/react-router"; // Changed to Tanstack
 import { useToast } from "@/hooks/use-toast";
 
-export default function Activation() {
-  const [file, setFile] = useState<File | null>(null);
+const Activation = () => {
+  const [activationCode, setActivationCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = async () => {
-    if(!file) return toast({title: "Error", description: "Upload proof first"});
+  const handleActivate = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
 
-    const { data: { user } } = await supabase.auth.getUser(); // FIXED HERE
-    if(!user) {
-      toast({title: "Error", description: "You must be logged in"});
+    // FIXED: Added the missing }
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast({ title: "Error", description: "You must be logged in" });
       setLoading(false);
       return;
     }
 
-    const filePath = `${user.id}/${Date.now()}.png`;
-    const { data: upload } = await supabase.storage.from('activation_proofs').upload(filePath, file);
+    // Check if code is valid
+    const { data: codeData, error: codeError } = await supabase
+      .from('activation_codes')
+      .select('*')
+      .eq('code', activationCode)
+      .eq('is_used', false)
+      .single();
 
-    if(upload) {
-      await supabase.from('activations').insert({ user_id: user.id, proof_url: upload.path, status: 'pending' });
-      toast({ title: "Submitted", description: "Waiting for admin approval" });
+    if (codeError || !codeData) {
+      toast({ title: "Error", description: "Invalid activation code" });
+      setLoading(false);
+      return;
     }
+
+    // Activate user
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ is_active: true })
+      .eq('id', user.id);
+
+    if (updateError) {
+      toast({ title: "Error", description: updateError.message });
+      setLoading(false);
+      return;
+    }
+
+    // Mark code as used
+    await supabase
+      .from('activation_codes')
+      .update({ is_used: true, used_by: user.id })
+      .eq('id', codeData.id);
+
+    toast({ title: "Success", description: "Account activated! Welcome to Flow Earn." });
+    navigate({ to: '/dashboard' });
     setLoading(false);
   }
 
   return (
-    <div className="p-4 max-w-md mx-auto mt-10">
-      <h1 className="text-2xl font-bold mb-2">Activate Your Account with 1,000 NARIA</h1>
-      <div className="bg-yellow-100 p-4 rounded mb-4">
-        <p><b>Bank:</b> Moniepoint</p>
-        <p><b>Account Number:</b> 9135054964</p>
-        <p><b>Account Name:</b> Seriki Tumnishe Mubarak</p>
-      </div>
-      <Input type="file" accept="image/*" onChange={e => setFile(e.target.files?.[0] || null)} />
-      <Button onClick={handleSubmit} disabled={loading} className="w-full mt-4">
-        {loading? "Submitting..." : "Submit Activation"}
-      </Button>
+    <div className="p-4 max-w-md mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Activate Account</h1>
+      <p className="text-sm text-gray-600 mb-4">Enter your activation code to start earning</p>
+      <form onSubmit={handleActivate} className="space-y-4">
+        <Input 
+          placeholder="Enter activation code" 
+          value={activationCode} 
+          onChange={e => setActivationCode(e.target.value)} 
+          required 
+        />
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading ? "Activating..." : "Activate"}
+        </Button>
+      </form>
     </div>
   )
 }
+
+export default Activation;
