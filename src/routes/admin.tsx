@@ -164,7 +164,7 @@ function AdminPage() {
   // FIXED ADMIN CHECK - CHECKS BY EMAIL
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { user } = await supabase.auth.getUser(); // <-- FIXED THIS LINE
+      const { data: { user } } = await supabase.auth.getUser(); // <-- FIXED: } instead of =
 
       if (!user) {
         window.location.href = "/login";
@@ -173,12 +173,11 @@ function AdminPage() {
 
       console.log("Checking admin for:", user.email)
 
-      // Check by EMAIL instead of ID
       const { data: profile, error } = await supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("email", user.email)
-      .single();
+     .from("profiles")
+     .select("is_admin")
+     .eq("email", user.email)
+     .single();
 
       console.log("Profile data:", profile, "Error:", error)
 
