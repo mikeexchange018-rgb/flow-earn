@@ -3,8 +3,15 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { adminLogout } from "@/lib/admin.functions";
 import {
-  BarChart3, Users, ArrowDownToLine, ArrowUpFromLine, ClipboardList,
-  FileCheck2, PiggyBank, Share2, Settings,
+  BarChart3,
+  Users,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  ClipboardList,
+  FileCheck2,
+  PiggyBank,
+  Share2,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import { AppLayout } from "@/components/app-layout";
@@ -13,32 +20,51 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// DELETED THIS LINE: const ADMIN_EMAIL = "serikitumnishe@gmail.com";
-
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
       { title: "Admin Console — Flowearn" },
-      { name: "description", content: "Flowearn admin console: manage users, withdrawals, deposits, tasks, submissions, investments, referrals and site settings." },
+      {
+        name: "description",
+        content:
+          "Flowearn admin console: manage users, withdrawals, deposits, tasks, submissions, investments, referrals and site settings.",
+      },
       { property: "og:title", content: "Admin Console — Flowearn" },
-      { property: "og:description", content: "Manage Flowearn users, payouts, tasks and platform settings." },
+      {
+        property: "og:description",
+        content: "Manage Flowearn users, payouts, tasks and platform settings.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
   component: AdminPage,
 });
 
-type Tab = "Dashboard" | "Users" | "Withdrawals" | "Deposits" | "Tasks" | "Submissions" | "Investments" | "Referrals" | "Activations" | "Site Settings";
+type Tab =
+  | "Dashboard"
+  | "Users"
+  | "Withdrawals"
+  | "Deposits"
+  | "Tasks"
+  | "Submissions"
+  | "Investments"
+  | "Referrals"
+  | "Activations"
+  | "Site Settings";
 
 const TABS: { key: Tab; icon: typeof Users }[] = [
-  { key: "Dashboard", icon: BarChart3 }, { key: "Users", icon: Users },
-  { key: "Withdrawals", icon: ArrowUpFromLine }, { key: "Deposits", icon: ArrowDownToLine },
-  { key: "Tasks", icon: ClipboardList }, { key: "Submissions", icon: FileCheck2 },
-  { key: "Investments", icon: PiggyBank }, { key: "Referrals", icon: Share2 },
-  { key: "Activations", icon: FileCheck2 }, { key: "Site Settings", icon: Settings },
+  { key: "Dashboard", icon: BarChart3 },
+  { key: "Users", icon: Users },
+  { key: "Withdrawals", icon: ArrowUpFromLine },
+  { key: "Deposits", icon: ArrowDownToLine },
+  { key: "Tasks", icon: ClipboardList },
+  { key: "Submissions", icon: FileCheck2 },
+  { key: "Investments", icon: PiggyBank },
+  { key: "Referrals", icon: Share2 },
+  { key: "Activations", icon: FileCheck2 },
+  { key: "Site Settings", icon: Settings },
 ];
 
-//... ALL YOUR TYPES AND COMPONENTS STAY THE SAME...
 type Withdrawal = { id: string; user: string; amount: number; bank: string; status: string };
 const WITHDRAWALS: Withdrawal[] = [];
 type Deposit = { id: string; user: string; amount: number; method: string; status: string };
@@ -48,18 +74,85 @@ const INVESTMENTS: Investment[] = [];
 type Referral = { referrer: string; invited: number; earned: number };
 const REFERRALS: Referral[] = [];
 
-function toneFor(status: string) { /*... unchanged ...*/ return "bg-success/10 text-success" }
-function Pill({ status }: { status: string }) { /*... unchanged ...*/ return <span></span> }
-function Card({ title, children }: { title: string; children: React.ReactNode }) { /*... unchanged ...*/ return <section></section> }
-function Empty({ label }: { label: string }) { /*... unchanged ...*/ return <p></p> }
-function Row({ title, subtitle, value, status, actions }: any) { /*... unchanged ...*/ return <div></div> }
-function Stat({ label, value }: { label: string; value: string }) { /*... unchanged ...*/ return <div></div> }
-function UsersManager() { /*... unchanged ...*/ return <Card title="Users"></Card> }
-function SiteSettings() { /*... unchanged ...*/ return <Card title="Site Settings"></Card> }
+function toneFor(status: string) {
+  if (["approved", "confirmed", "active", "running", "completed"].includes(status))
+    return "bg-success/10 text-success";
+  if (["pending", "paused"].includes(status)) return "bg-brand/20 text-brand-foreground";
+  return "bg-destructive/10 text-destructive";
+}
+function Pill({ status }: { status: string }) {
+  return (
+    <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", toneFor(status))}>
+      {status}
+    </span>
+  );
+}
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl bg-card p-4 shadow-card">
+      <h2 className="mb-3 text-sm font-bold">{title}</h2>
+      <div className="space-y-2">{children}</div>
+    </section>
+  );
+}
+function Empty({ label }: { label: string }) {
+  return (
+    <p className="rounded-xl border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+      {label}
+    </p>
+  );
+}
+function Row({ title, subtitle, value, status, actions }: { title: string; subtitle: string; value?: string; status?: string; actions?: string[] }) {
+  return (
+    <div className="rounded-xl border border-border p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{title}</p>
+          <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+        <div className="shrink-0 text-right">
+          {value? <p className="text-sm font-bold">{value}</p> : null}
+          {status? <Pill status={status} /> : null}
+        </div>
+      </div>
+      {actions?.length? (
+        <div className="mt-3 flex gap-2">
+          {actions.map((a) => (
+            <button key={a} onClick={() => toast.success(`${a} — ${title}`)} className="h-8 flex-1 rounded-lg bg-secondary text-xs font-semibold text-secondary-foreground">
+              {a}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-card p-4 shadow-card">
+      <p className="text-[11px] font-semibold uppercase text-muted-foreground">{label}</p>
+      <p className="mt-1 text-lg font-extrabold">{value}</p>
+    </div>
+  );
+}
+function UsersManager() {
+  const { state } = useApp();
+  return (
+    <Card title="Users">
+      {state.members.map((m) => (
+        <Row key={m.id} title={m.name} subtitle={m.email} value={naira(m.balance)} />
+      ))}
+      {state.members.length === 0 && <Empty label="No users yet" />}
+    </Card>
+  );
+}
+function SiteSettings() {
+  const [form, setForm] = useState({ siteName: "Flowearn", minWithdrawal: "1000", referralBonus: "300", welcomeBonus: "100", maintenance: false });
+  return (<Card title="Site Settings"><Empty label="Settings UI here" /></Card>)
+}
 const EMPTY_TASK = { platform: "", type: "", link: "", price: "", quantity: "" };
-function TasksManager() { /*... unchanged ...*/ return <div></div> }
-function ActivationsManager() { /*... unchanged ...*/ return <Card title="Pending Activations"></Card> }
-
+function TasksManager() { return <Card title="Tasks"><Empty label="No tasks" /></Card> }
+function ActivationsManager() { return <Card title="Pending Activations"><Empty label="No activations" /></Card> }
 
 function AdminPage() {
   const { state } = useApp();
@@ -68,37 +161,37 @@ function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const lockConsole = useServerFn(adminLogout);
 
-  // CHANGED THIS WHOLE useEffect
+  // SECURE ADMIN CHECK WITH SUPABASE
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { user } = await supabase.auth.getUser();
-      
+      const { data: { user } } = await supabase.auth.getUser();
+
       if (!user) {
-        window.location.href = "/login"; // not logged in
+        window.location.href = "/login";
         return;
       }
 
-      // THIS IS THE NEW CHECK: Check profiles table for is_admin
+      // Check profiles table for is_admin = true
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
+       .from("profiles")
+       .select("is_admin")
+       .eq("id", user.id)
+       .single();
 
-      if (profile?.is_admin) {
+      if (profile?.is_admin === true) {
         setIsAdmin(true);
       } else {
-        window.location.href = "/profile"; // not admin
+        window.location.href = "/profile";
       }
       setLoading(false);
     };
+
     checkAdmin();
   }, []);
 
   if (loading) {
     return <AppLayout><p className="p-6 text-center text-sm text-muted-foreground">Checking admin access...</p></AppLayout>;
   }
-
   if (!isAdmin) {
     return <AppLayout><p className="p-6 text-center text-sm text-muted-foreground">Access denied</p></AppLayout>;
   }
@@ -116,7 +209,6 @@ function AdminPage() {
             Lock console
           </button>
         </div>
-
         <div className="-mx-4 overflow-x-auto px-4">
           <div className="flex w-max gap-2">
             {TABS.map(({ key, icon: Icon }) => (
@@ -127,7 +219,6 @@ function AdminPage() {
             ))}
           </div>
         </div>
-
         {tab === "Dashboard" && (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -139,7 +230,6 @@ function AdminPage() {
             <Card title="Latest activity"><Empty label="No activity yet" /></Card>
           </div>
         )}
-
         {tab === "Users" && <UsersManager />}
         {tab === "Tasks" && <TasksManager />}
         {tab === "Activations" && <ActivationsManager />}
