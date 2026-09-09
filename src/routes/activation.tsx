@@ -12,11 +12,19 @@ export default function Activation() {
   const handleSubmit = async () => {
     if(!file) return toast({title: "Error", description: "Upload proof first"});
     setLoading(true);
-    const { data: { user } = await supabase.auth.getUser();
+
+    const { data: { user } } = await supabase.auth.getUser(); // FIXED HERE
+    if(!user) {
+      toast({title: "Error", description: "You must be logged in"});
+      setLoading(false);
+      return;
+    }
+
     const filePath = `${user.id}/${Date.now()}.png`;
     const { data: upload } = await supabase.storage.from('activation_proofs').upload(filePath, file);
+
     if(upload) {
-      await supabase.from('activations').insert({ user_id: user.id, proof_url: upload.path });
+      await supabase.from('activations').insert({ user_id: user.id, proof_url: upload.path, status: 'pending' });
       toast({ title: "Submitted", description: "Waiting for admin approval" });
     }
     setLoading(false);
@@ -31,7 +39,9 @@ export default function Activation() {
         <p><b>Account Name:</b> Seriki Tumnishe Mubarak</p>
       </div>
       <Input type="file" accept="image/*" onChange={e => setFile(e.target.files?.[0] || null)} />
-      <Button onClick={handleSubmit} disabled={loading} className="w-full mt-4">Submit Activation</Button>
+      <Button onClick={handleSubmit} disabled={loading} className="w-full mt-4">
+        {loading? "Submitting..." : "Submit Activation"}
+      </Button>
     </div>
   )
 }
