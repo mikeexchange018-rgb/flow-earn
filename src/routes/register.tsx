@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router"; // FIXED HERE
 import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
@@ -32,7 +32,7 @@ const Register = () => {
     const { data, error } = await supabase.auth.signUp({ 
       email, 
       password, 
-      options: { data: { username } } // ADDED CLOSING } HERE
+      options: { data: { username } }
     });
 
     if(error) { 
@@ -51,10 +51,10 @@ const Register = () => {
         balance_naria: 0
       });
       toast({ title: "Success", description: "Account created. Please activate to start earning." });
-      navigate('/activation');
+      navigate({ to: '/activation' }); // Tanstack uses object
     }
     setLoading(false);
-  } // ADDED CLOSING } HERE
+  }
 
   return (
     <div className="p-4 max-w-md mx-auto">
@@ -75,6 +75,6 @@ const Register = () => {
       </form>
     </div>
   )
-} // ADDED CLOSING } HERE
+}
 
 export default Register;
