@@ -30,21 +30,31 @@ const Register = () => {
     }
 
     const { data, error } = await supabase.auth.signUp({ 
-      email, password, options: { data: { username }
+      email, 
+      password, 
+      options: { data: { username } } // ADDED CLOSING } HERE
     });
 
-    if(error) { toast({ title: "Error", description: error.message }); setLoading(false); return; }
+    if(error) { 
+      toast({ title: "Error", description: error.message }); 
+      setLoading(false); 
+      return; 
+    }
 
     if(data.user) {
       await supabase.from('profiles').insert({
-        id: data.user.id, username, referral_code: newRefCode, referrer_id,
-        is_active: false, balance_naria: 0
+        id: data.user.id, 
+        username, 
+        referral_code: newRefCode, 
+        referrer_id,
+        is_active: false, 
+        balance_naria: 0
       });
       toast({ title: "Success", description: "Account created. Please activate to start earning." });
       navigate('/activation');
     }
     setLoading(false);
-  }
+  } // ADDED CLOSING } HERE
 
   return (
     <div className="p-4 max-w-md mx-auto">
@@ -59,9 +69,12 @@ const Register = () => {
             {showPassword? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
-        <Button type="submit" disabled={loading} className="w-full">Sign Up</Button>
+        <Button type="submit" disabled={loading} className="w-full">
+          {loading? "Creating..." : "Sign Up"}
+        </Button>
       </form>
     </div>
   )
+} // ADDED CLOSING } HERE
 
-export default Register; >Type update register page >
+export default Register;
