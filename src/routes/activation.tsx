@@ -78,7 +78,8 @@ const Activation = () => {
       </form>
     </div>
   )
-}import { createFileRoute } from '@tanstack/react-router'
+}
+import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/activation')({
   component: Activation,
