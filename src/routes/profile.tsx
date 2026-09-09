@@ -42,7 +42,7 @@ const LINKS = [
 ];
 
 function ProfilePage() {
-  const { state, logout, spin } = useApp();
+  const { state, logout, spin, isAdmin } = useApp();
   const navigate = useNavigate();
   const [bank, setBankState] = useState(state.bank);
   const { setBank } = useApp();
@@ -105,9 +105,10 @@ function ProfilePage() {
             </button>
           </li>
         ))}
-        <li>
-          <button
-            onClick={() => navigate({ to: "/admin" })}
+        {isAdmin && (
+          <li>
+            <button
+              onClick={() => navigate({ to: "/admin" })}
             className="flex w-full items-center gap-3 px-4 py-3.5 text-left"
           >
             <Shield className="size-4 text-muted-foreground" />
