@@ -29,12 +29,9 @@ export const adminLogin = createServerFn({ method: "POST" })
     const expectedPassword = process.env["ADMIN_PASSWORD"];
     if (!expectedPassword) throw new Error("ADMIN_PASSWORD is not set");
 
-    // Email is typed by hand and easy to mistype; the password is the real
-    // secret. Accept any close spelling of the admin address.
-    const normalize = (v: string) => v.trim().toLowerCase().replace(/[^a-z@.]/g, "");
-    const emailOk =
-      normalize(data.email).endsWith("@gmail.com") ||
-      normalize(data.email) === normalize(ADMIN_EMAIL);
+    // Only the exact admin address may sign in — any other email fails.
+    const normalize = (v: string) => v.trim().toLowerCase();
+    const emailOk = matches(normalize(data.email), normalize(ADMIN_EMAIL));
     const passwordOk = matches(data.password, expectedPassword);
     if (!emailOk || !passwordOk) {
       return { ok: false as const }; // generic failure — reveal nothing more
