@@ -17,6 +17,8 @@ import { toast } from "sonner";
 import { AppLayout } from "@/components/app-layout";
 import { ENGAGEMENTS, naira, PLATFORMS, useApp } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -47,6 +49,7 @@ type Tab =
   | "Submissions"
   | "Investments"
   | "Referrals"
+  | "Activations"
   | "Site Settings";
 
 const TABS: { key: Tab; icon: typeof Users }[] = [
@@ -58,32 +61,20 @@ const TABS: { key: Tab; icon: typeof Users }[] = [
   { key: "Submissions", icon: FileCheck2 },
   { key: "Investments", icon: PiggyBank },
   { key: "Referrals", icon: Share2 },
+  { key: "Activations", icon: FileCheck2 },
   { key: "Site Settings", icon: Settings },
 ];
 
-
 type Withdrawal = { id: string; user: string; amount: number; bank: string; status: string };
-
 const WITHDRAWALS: Withdrawal[] = [];
 
 type Deposit = { id: string; user: string; amount: number; method: string; status: string };
-
 const DEPOSITS: Deposit[] = [];
 
-type Investment = {
-
-  id: string;
-  user: string;
-  plan: string;
-  amount: number;
-  daily: number;
-  status: string;
-};
-
+type Investment = { id: string; user: string; plan: string; amount: number; daily: number; status: string };
 const INVESTMENTS: Investment[] = [];
 
 type Referral = { referrer: string; invited: number; earned: number };
-
 const REFERRALS: Referral[] = [];
 
 function toneFor(status: string) {
@@ -118,8 +109,6 @@ function Empty({ label }: { label: string }) {
   );
 }
 
-
-
 function Row({
   title,
   subtitle,
@@ -141,11 +130,11 @@ function Row({
           <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
         </div>
         <div className="shrink-0 text-right">
-          {value ? <p className="text-sm font-bold">{value}</p> : null}
-          {status ? <Pill status={status} /> : null}
+          {value? <p className="text-sm font-bold">{value}</p> : null}
+          {status? <Pill status={status} /> : null}
         </div>
       </div>
-      {actions?.length ? (
+      {actions?.length? (
         <div className="mt-3 flex gap-2">
           {actions.map((a) => (
             <button
@@ -171,6 +160,18 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function UsersManager() {
+  const { state } = useApp();
+  return (
+    <Card title="Users">
+      {state.members.map((m) => (
+        <Row key={m.id} title={m.name} subtitle={m.email} value={naira(m.balance)} />
+      ))}
+      {state.members.length === 0 && <Empty label="No users yet" />}
+    </Card>
+  );
+}
+
 function SiteSettings() {
   const [form, setForm] = useState({
     siteName: "Flowearn",
@@ -193,7 +194,7 @@ function SiteSettings() {
           <span className="text-[11px] font-semibold uppercase text-muted-foreground">{label}</span>
           <input
             value={form[key]}
-            onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+            onChange={(e) => setForm({...form, [key]: e.target.value })}
             className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
           />
         </label>
@@ -203,7 +204,7 @@ function SiteSettings() {
         <input
           type="checkbox"
           checked={form.maintenance}
-          onChange={(e) => setForm({ ...form, maintenance: e.target.checked })}
+          onChange={(e) => setForm({...form, maintenance: e.target.checked })}
           className="size-5 accent-[hsl(var(--brand))]"
         />
       </label>
@@ -234,7 +235,7 @@ function TasksManager() {
     e.preventDefault();
     const price = Number(form.price);
     const quantity = Number(form.quantity);
-    if (!form.platform.trim() || !form.type.trim()) {
+    if (!form.platform.trim() ||!form.type.trim()) {
       toast.error("Platform and engagement type are required");
       return;
     }
@@ -271,15 +272,13 @@ function TasksManager() {
 
   return (
     <div className="space-y-3">
-      <Card title={editing ? "Edit task" : "Upload new task"}>
+      <Card title={editing? "Edit task" : "Upload new task"}>
         <form onSubmit={save} className="space-y-3">
           <label className="block">
-            <span className="text-[11px] font-semibold uppercase text-muted-foreground">
-              Platform
-            </span>
+            <span className="text-[11px] font-semibold uppercase text-muted-foreground">Platform</span>
             <select
               value={form.platform}
-              onChange={(e) => setForm({ ...form, platform: e.target.value })}
+              onChange={(e) => setForm({...form, platform: e.target.value })}
               className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
             >
               <option value="">Select platform</option>
@@ -289,13 +288,11 @@ function TasksManager() {
             </select>
           </label>
           <label className="block">
-            <span className="text-[11px] font-semibold uppercase text-muted-foreground">
-              Engagement type
-            </span>
+            <span className="text-[11px] font-semibold uppercase text-muted-foreground">Engagement type</span>
             <select
               value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value })}
-              className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+              onChange={(e) => setForm({...form, type: e.target.value })}
+              className="mt-1 h-11 w-full rounded-xl border-border bg-background px-3 text-sm"
             >
               <option value="">Select engagement</option>
               {ENGAGEMENTS.map((p) => (
@@ -311,29 +308,27 @@ function TasksManager() {
             ] as const
           ).map(([label, key, type]) => (
             <label key={key} className="block">
-              <span className="text-[11px] font-semibold uppercase text-muted-foreground">
-                {label}
-              </span>
+              <span className="text-[11px] font-semibold uppercase text-muted-foreground">{label}</span>
               <input
                 type={type}
                 value={form[key]}
-                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                placeholder={key === "link" ? "https://" : undefined}
-                className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm"
+                onChange={(e) => setForm({...form, [key]: e.target.value })}
+                placeholder={key === "link"? "https://" : undefined}
+                className="mt-1 h-11 w-full rounded-xl border-border bg-background px-3 text-sm"
               />
             </label>
           ))}
           <div className="rounded-xl border border-border p-3 text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total budget</span>
-              <span className="font-bold">{naira(Number.isFinite(total) ? total : 0)}</span>
+              <span className="font-bold">{naira(Number.isFinite(total)? total : 0)}</span>
             </div>
           </div>
           <div className="flex gap-2">
             <button className="h-11 flex-1 rounded-xl bg-brand text-sm font-bold text-brand-foreground">
-              {editing ? "Save changes" : "Upload task"}
+              {editing? "Save changes" : "Upload task"}
             </button>
-            {editing ? (
+            {editing? (
               <button
                 type="button"
                 onClick={reset}
@@ -351,19 +346,10 @@ function TasksManager() {
           <div key={t.id} className="rounded-xl border border-border p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">
-                  {t.platform} · {t.type}
-                </p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {t.taken}/{t.quantity} joined · {naira(t.price)}/task
-                </p>
-                {t.link ? (
-                  <a
-                    href={t.link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block truncate text-[11px] font-semibold text-brand"
-                  >
+                <p className="truncate text-sm font-semibold">{t.platform} · {t.type}</p>
+                <p className="truncate text-xs text-muted-foreground">{t.taken}/{t.quantity} joined · {naira(t.price)}/task</p>
+                {t.link? (
+                  <a href={t.link} target="_blank" rel="noreferrer" className="block truncate text-[11px] font-semibold text-brand">
                     {t.link}
                   </a>
                 ) : null}
@@ -390,7 +376,7 @@ function TasksManager() {
                 onClick={() => toggleTask(t.id)}
                 className="h-8 flex-1 rounded-lg bg-secondary text-xs font-semibold text-secondary-foreground"
               >
-                {t.status === "running" ? "Pause" : "Resume"}
+                {t.status === "running"? "Pause" : "Resume"}
               </button>
               <button
                 onClick={() => {
@@ -411,6 +397,61 @@ function TasksManager() {
   );
 }
 
+function ActivationsManager() {
+  const [activations, setActivations] = useState<any[]>([]);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchActivations();
+  }, []);
+
+  const fetchActivations = async () => {
+    const { data } = await supabase
+     .from('activations')
+     .select('*, profiles!activations_user_id_fkey(username, referrer_id)')
+     .eq('status', 'pending')
+     .order('created_at', { ascending: false });
+    setActivations(data || []);
+  }
+
+  const approve = async (activation: any) => {
+    const { data: user } = await supabase.from('profiles').select('balance_naria').eq('id', activation.user_id).single();
+    await supabase.from('profiles').update({ is_active: true, balance_naria: (user?.balance_naria || 0) + 100 }).eq('id', activation.user_id);
+
+    if(activation.profiles?.referrer_id) {
+      const { data: ref } = await supabase.from('profiles').select('balance_naria').eq('id', activation.profiles.referrer_id).single();
+      await supabase.from('profiles').update({ balance_naria: (ref?.balance_naria || 0) + 500 }).eq('id', activation.profiles.referrer_id);
+    }
+
+    await supabase.from('activations').update({ status: 'approved' }).eq('id', activation.id);
+    toast.success("Approved! 100 NARIA sent to user");
+    fetchActivations();
+  }
+
+  return (
+    <Card title="Pending Activations">
+      {activations.length === 0 && <Empty label="No pending activations" />}
+      {activations.map(a => (
+        <div key={a.id} className="rounded-xl border-border p-3">
+          <p className="font-semibold">{a.profiles?.username}</p>
+          <p className="text-xs text-muted-foreground">{new Date(a.created_at).toLocaleString()}</p>
+          <img
+            src={supabase.storage.from('activation_proofs').getPublicUrl(a.proof_url).data.publicUrl}
+            className="w-64 my-2 border rounded"
+          />
+          <div className="flex gap-2 mt-2">
+            <button onClick={() => approve(a)} className="h-8 flex-1 rounded-lg bg-success text-xs font-bold text-white">
+              Approve + Pay 100
+            </button>
+            <button onClick={() => supabase.from('activations').update({status: 'rejected'}).eq('id', a.id).then(fetchActivations)} className="h-8 flex-1 rounded-lg bg-destructive/10 text-xs font-semibold text-destructive">
+              Reject
+            </button>
+          </div>
+        </div>
+      ))}
+    </Card>
+  )
+}
 
 type Gate = "loading" | "locked" | "unlocked";
 
@@ -441,52 +482,21 @@ function AdminLoginForm({ onSuccess }: { onSuccess: () => void }) {
       <div className="p-4">
         <form onSubmit={onSubmit} className="mx-auto mt-8 max-w-sm space-y-4 rounded-2xl bg-card p-6 shadow-card">
           <div className="text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-xl font-extrabold text-brand-foreground">
-              F
-            </div>
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-xl font-extrabold text-brand-foreground">F</div>
             <h1 className="text-lg font-extrabold">Admin Access</h1>
-            <p className="text-xs text-muted-foreground">
-              Restricted to the Flowearn administrator.
-            </p>
+            <p className="text-xs text-muted-foreground">Restricted to the Flowearn administrator.</p>
           </div>
           <label className="block">
-            <span className="mb-1.5 block text-[11px] font-bold tracking-wide text-muted-foreground">
-              ADMIN EMAIL
-            </span>
-            <input
-              type="email"
-              required
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin email"
-              className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-brand"
-            />
+            <span className="mb-1.5 block text-[11px] font-bold tracking-wide text-muted-foreground">ADMIN EMAIL</span>
+            <input type="email" required autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin email" className="h-11 w-full rounded-xl border-input bg-background px-3 text-sm outline-none focus:border-brand"/>
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-[11px] font-bold tracking-wide text-muted-foreground">
-              PASSWORD
-            </span>
-            <input
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none focus:border-brand"
-            />
+            <span className="mb-1.5 block text-[11px] font-bold tracking-wide text-muted-foreground">PASSWORD</span>
+            <input type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="h-11 w-full rounded-xl border-input bg-background px-3 text-sm outline-none focus:border-brand"/>
           </label>
-          {error && (
-            <p className="text-center text-xs font-semibold text-destructive">
-              Invalid admin credentials
-            </p>
-          )}
-          <button
-            disabled={busy}
-            className="h-11 w-full rounded-xl bg-brand text-sm font-bold text-brand-foreground disabled:opacity-60"
-          >
-            {busy ? "Verifying…" : "Unlock Console"}
+          {error && <p className="text-center text-xs font-semibold text-destructive">Invalid admin credentials</p>}
+          <button disabled={busy} className="h-11 w-full rounded-xl bg-brand text-sm font-bold text-brand-foreground disabled:opacity-60">
+            {busy? "Verifying…" : "Unlock Console"}
           </button>
         </form>
       </div>
@@ -495,7 +505,7 @@ function AdminLoginForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 function AdminPage() {
-  const { state, isAdmin } = useApp();
+  const { state } = useApp();
   const [tab, setTab] = useState<Tab>("Dashboard");
   const [gate, setGate] = useState<Gate>("loading");
   const checkSession = useServerFn(getAdminSession);
@@ -503,29 +513,20 @@ function AdminPage() {
 
   useEffect(() => {
     let cancelled = false;
-    // An already signed-in admin account skips the extra admin sign-in.
-    if (isAdmin) {
-      setGate("unlocked");
-      return;
-    }
     checkSession()
-      .then(({ unlocked }) => {
-        if (!cancelled) setGate(unlocked ? "unlocked" : "locked");
+     .then(({ unlocked }) => {
+        if (!cancelled) setGate(unlocked? "unlocked" : "locked");
       })
-      .catch(() => {
+     .catch(() => {
         if (!cancelled) setGate("locked");
       });
     return () => {
       cancelled = true;
     };
-  }, [checkSession, isAdmin]);
+  }, [checkSession]);
 
   if (gate === "loading") {
-    return (
-      <AppLayout>
-        <p className="p-6 text-center text-sm text-muted-foreground">Checking permissions…</p>
-      </AppLayout>
-    );
+    return <AppLayout><p className="p-6 text-center text-sm text-muted-foreground">Checking permissions…</p></AppLayout>;
   }
 
   if (gate === "locked") {
@@ -538,16 +539,9 @@ function AdminPage() {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-lg font-extrabold">Admin Console</h1>
-            <p className="truncate text-xs text-muted-foreground">
-              Signed in as {state.user?.email}
-            </p>
+            <p className="truncate text-xs text-muted-foreground">Signed in as {state.user?.email}</p>
           </div>
-          <button
-            onClick={() => {
-              void lockConsole().finally(() => setGate("locked"));
-            }}
-            className="h-9 shrink-0 rounded-xl bg-secondary px-3 text-xs font-bold text-secondary-foreground"
-          >
+          <button onClick={() => { void lockConsole().finally(() => setGate("locked")); }} className="h-9 shrink-0 rounded-xl bg-secondary px-3 text-xs font-bold text-secondary-foreground">
             Lock console
           </button>
         </div>
@@ -555,16 +549,7 @@ function AdminPage() {
         <div className="-mx-4 overflow-x-auto px-4">
           <div className="flex w-max gap-2">
             {TABS.map(({ key, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setTab(key)}
-                className={cn(
-                  "flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold",
-                  tab === key
-                    ? "bg-brand text-brand-foreground"
-                    : "bg-card text-muted-foreground shadow-card",
-                )}
-              >
+              <button key={key} onClick={() => setTab(key)} className={cn("flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold", tab === key? "bg-brand text-brand-foreground" : "bg-card text-muted-foreground shadow-card")}>
                 <Icon className="size-4" />
                 {key}
               </button>
@@ -576,261 +561,24 @@ function AdminPage() {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Stat label="Total users" value={String(state.members.length)} />
-              <Stat
-                label="Pending withdrawals"
-                value={String(WITHDRAWALS.filter((w) => w.status === "pending").length)}
-              />
-              <Stat
-                label="Deposits today"
-                value={naira(DEPOSITS.reduce((sum, d) => sum + d.amount, 0))}
-              />
-              <Stat
-                label="Active investments"
-                value={String(INVESTMENTS.filter((i) => i.status === "active").length)}
-              />
+              <Stat label="Pending withdrawals" value={String(WITHDRAWALS.filter((w) => w.status === "pending").length)} />
+              <Stat label="Deposits today" value={naira(DEPOSITS.reduce((sum, d) => sum + d.amount, 0))} />
+              <Stat label="Active investments" value={String(INVESTMENTS.filter((i) => i.status === "active").length)} />
             </div>
-            <Card title="Latest activity">
-              <Empty label="No activity yet" />
-            </Card>
+            <Card title="Latest activity"><Empty label="No activity yet" /></Card>
           </div>
         )}
 
         {tab === "Users" && <UsersManager />}
-
-        {tab === "Withdrawals" && (
-          <Card title="Withdrawal requests">
-            {WITHDRAWALS.map((w) => (
-              <Row
-                key={w.id}
-                title={`${w.id} · ${w.user}`}
-                subtitle={w.bank}
-                value={naira(w.amount)}
-                status={w.status}
-                actions={w.status === "pending" ? ["Approve", "Reject"] : undefined}
-              />
-            ))}
-            {WITHDRAWALS.length === 0 && <Empty label="No withdrawal requests" />}
-          </Card>
-        )}
-
-        {tab === "Deposits" && (
-          <Card title="Deposits">
-            {DEPOSITS.map((d) => (
-              <Row
-                key={d.id}
-                title={`${d.id} · ${d.user}`}
-                subtitle={d.method}
-                value={naira(d.amount)}
-                status={d.status}
-                actions={d.status === "pending" ? ["Confirm", "Decline"] : undefined}
-              />
-            ))}
-            {DEPOSITS.length === 0 && <Empty label="No deposits yet" />}
-          </Card>
-        )}
-
         {tab === "Tasks" && <TasksManager />}
-
-        {tab === "Submissions" && <SubmissionsManager />}
-
-
-        {tab === "Investments" && (
-          <Card title="Investments">
-            {INVESTMENTS.map((i) => (
-              <Row
-                key={i.id}
-                title={`${i.plan} · ${i.user}`}
-                subtitle={`${i.id} · ${naira(i.daily)}/day`}
-                value={naira(i.amount)}
-                status={i.status}
-              />
-            ))}
-            {INVESTMENTS.length === 0 && <Empty label="No investments yet" />}
-          </Card>
-        )}
-
-        {tab === "Referrals" && (
-          <Card title="Referrals">
-            {REFERRALS.map((r) => (
-              <Row
-                key={r.referrer}
-                title={r.referrer}
-                subtitle={`${r.invited} invited`}
-                value={naira(r.earned)}
-              />
-            ))}
-            {REFERRALS.length === 0 && <Empty label="No referrals yet" />}
-          </Card>
-        )}
-
+        {tab === "Activations" && <ActivationsManager />}
         {tab === "Site Settings" && <SiteSettings />}
+        {tab === "Withdrawals" && <Card title="Withdrawal requests">{WITHDRAWALS.length === 0 && <Empty label="No withdrawal requests" />}</Card>}
+        {tab === "Deposits" && <Card title="Deposits">{DEPOSITS.length === 0 && <Empty label="No deposits" />}</Card>}
+        {tab === "Investments" && <Card title="Investments">{INVESTMENTS.length === 0 && <Empty label="No investments" />}</Card>}
+        {tab === "Referrals" && <Card title="Referrals">{REFERRALS.length === 0 && <Empty label="No referrals" />}</Card>}
+        {tab === "Submissions" && <Card title="Task Submissions"><Empty label="No submissions" /></Card>}
       </div>
     </AppLayout>
-  );
-}
-
-function UsersManager() {
-  const { state } = useApp();
-  const [q, setQ] = useState("");
-  const members = state.members
-    .map((m) => ({
-      ...m,
-      withdrawable: m.wallets.task + m.wallets.income + m.wallets.affiliate,
-    }))
-    .filter((m) =>
-      `${m.username} ${m.email}`.toLowerCase().includes(q.trim().toLowerCase()),
-    )
-    .sort((a, b) => b.withdrawable - a.withdrawable);
-
-  const totalWaiting = members.reduce((sum, m) => sum + m.withdrawable, 0);
-
-  return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <Stat label="Registered users" value={String(state.members.length)} />
-        <Stat label="Money waiting" value={naira(totalWaiting)} />
-      </div>
-
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Search name or email"
-        className="h-11 w-full rounded-xl bg-card px-3 text-sm shadow-card outline-none"
-      />
-
-      <Card title="Users">
-        {members.map((m) => (
-          <div key={m.email} className="border-b border-border py-3 last:border-0">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold">{m.username}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {m.email} · {m.rank}
-                </p>
-                {m.phone && <p className="text-xs text-muted-foreground">{m.phone}</p>}
-                <p className="text-[11px] text-muted-foreground">
-                  Joined {new Date(m.joinedAt).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="text-sm font-extrabold">{naira(m.withdrawable)}</p>
-                <p className="text-[11px] text-muted-foreground">withdrawable</p>
-              </div>
-            </div>
-            <div className="mt-2 grid grid-cols-4 gap-2 text-center">
-              {(
-                [
-                  ["Task", m.wallets.task],
-                  ["Income", m.wallets.income],
-                  ["Affiliate", m.wallets.affiliate],
-                  ["Deposit", m.wallets.deposit],
-                ] as const
-              ).map(([label, amount]) => (
-                <div key={label} className="rounded-xl bg-secondary px-1 py-1.5">
-                  <p className="text-[10px] font-bold text-muted-foreground">{label}</p>
-                  <p className="text-[11px] font-bold">{naira(amount)}</p>
-                </div>
-              ))}
-            </div>
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              Earned {naira(m.earned)} · Withdrawn {naira(m.withdrawn)}
-            </p>
-          </div>
-        ))}
-        {members.length === 0 && <Empty label="No users yet" />}
-      </Card>
-    </div>
-  );
-}
-
-function SubmissionsManager() {
-  const { state, reviewSubmission } = useApp();
-  const [zoom, setZoom] = useState<string | null>(null);
-  const pending = state.submissions.filter((s) => s.status === "pending");
-  const reviewed = state.submissions.filter((s) => s.status !== "pending");
-
-  const list = (items: typeof state.submissions) =>
-    items.map((s) => (
-      <div key={s.id} className="border-b border-border py-4 last:border-0">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold">{s.task}</p>
-            <p className="truncate text-[11px] text-muted-foreground">
-              {state.user?.username ?? "user"} · {new Date(s.at).toLocaleString()}
-            </p>
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="text-xs font-extrabold">{naira(s.amount)}</p>
-            <span
-              className={cn(
-                "text-[10px] font-bold capitalize",
-                s.status === "approved"
-                  ? "text-success"
-                  : s.status === "rejected"
-                    ? "text-destructive"
-                    : "text-warn",
-              )}
-            >
-              {s.status}
-            </span>
-          </div>
-        </div>
-
-        {s.proof?.startsWith("data:image") ? (
-          <button
-            type="button"
-            onClick={() => setZoom(s.proof)}
-            className="mt-3 block w-full overflow-hidden rounded-xl border border-border"
-          >
-            <img src={s.proof} alt="Screenshot proof" className="max-h-64 w-full object-contain" />
-          </button>
-        ) : (
-          <p className="mt-2 break-all text-[11px] text-muted-foreground">Proof: {s.proof}</p>
-        )}
-
-        {s.status === "pending" && (
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={() => {
-                reviewSubmission(s.id, "approved");
-                toast.success("Submission approved and user paid");
-              }}
-              className="h-10 flex-1 rounded-xl bg-brand text-xs font-bold text-brand-foreground"
-            >
-              Approve
-            </button>
-            <button
-              onClick={() => {
-                reviewSubmission(s.id, "rejected");
-                toast.success("Submission rejected");
-              }}
-              className="h-10 flex-1 rounded-xl bg-secondary text-xs font-semibold text-secondary-foreground"
-            >
-              Reject
-            </button>
-          </div>
-        )}
-      </div>
-    ));
-
-  return (
-    <div className="space-y-4">
-      <Card title={`Pending proofs (${pending.length})`}>
-        {pending.length === 0 ? <Empty label="No pending task proofs" /> : list(pending)}
-      </Card>
-      <Card title="Reviewed">
-        {reviewed.length === 0 ? <Empty label="Nothing reviewed yet" /> : list(reviewed)}
-      </Card>
-
-      {zoom && (
-        <button
-          type="button"
-          onClick={() => setZoom(null)}
-          className="fixed inset-0 z-50 grid place-items-center bg-foreground/80 p-4"
-        >
-          <img src={zoom} alt="Screenshot proof" className="max-h-full w-full object-contain" />
-        </button>
-      )}
-    </div>
   );
 }
