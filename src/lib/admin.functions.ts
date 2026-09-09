@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { useSession } from "@tanstack/react-start/server";
 import { createHash, timingSafeEqual } from "node:crypto";
 
-const ADMIN_EMAIL = "serikitunmishe@gmail.com";
+const ADMIN_EMAILS = ["serikitunmishe@gmail.com", "serikitumnishe@gmail.com"];
 
 type AdminSession = { admin?: boolean };
 
