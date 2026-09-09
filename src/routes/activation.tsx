@@ -78,6 +78,8 @@ const Activation = () => {
       </form>
     </div>
   )
-}
+}import { createFileRoute } from '@tanstack/react-router'
 
-export default Activation;
+export const Route = createFileRoute('/activation')({
+  component: Activation,
+})
