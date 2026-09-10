@@ -13,7 +13,7 @@ function AdminPage() {
 
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { session } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession(); // FIXED BRACKET HERE
       const user = session?.user;
       if (!user) { 
         window.location.href = "/login"; 
